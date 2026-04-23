@@ -1,5 +1,5 @@
 {
-  "family": "ecs-terraform-example-dev-task",
+  "family": "dev-hello-ecs",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "256",
@@ -25,7 +25,7 @@
         },
         {
           "name": "APP_NAME",
-          "value": "ecs-terraform-example"
+          "value": "hello-ecs"
         },
         {
           "name": "PORT",
@@ -35,7 +35,7 @@
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/ecs-terraform-example-dev",
+          "awslogs-group": "/ecs/dev-hello-ecs",
           "awslogs-region": "us-west-2",
           "awslogs-stream-prefix": "app"
         }

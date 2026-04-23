@@ -16,6 +16,13 @@ variable "allowed_subjects" {
 variable "policy_json" {
   description = "Inline IAM policy document for the GitHub deploy role."
   type        = string
+  default     = ""
+}
+
+variable "create_inline_policy" {
+  description = "Whether to create the inline IAM policy for the GitHub deploy role."
+  type        = bool
+  default     = true
 }
 
 variable "create_oidc_provider" {
