@@ -2,7 +2,15 @@
 
 This repository is a small reference implementation for running one ECS
 service in `dev` and `test` while keeping infrastructure ownership separate
-from image rollout ownership.
+from image rollout ownership: in particular, address **drift** when new ECS 
+Tasks are deployed outside of terraform.
+
+The repo starts by using `terraform-aws-modules/terraform-aws-ecs` v5. It evolves in branches to learn a migration path from:
+1. Refactor the duplicated dev and test Terraform roots into an explicit composition model ([PR](https://github.com/oppegard/ecs-terraform-example/pull/1))
+2. Upgrade from `terraform-aws-modules/terraform-aws-ecs` v5 to v6 ([PR](https://github.com/oppegard/ecs-terraform-example/pull/2))
+3. Upgrade from `terraform-aws-modules/terraform-aws-ecs` v6 to v6 ([PR](https://github.com/oppegard/ecs-terraform-example/pull/3))
+
+
 
 ## What Terraform owns
 
