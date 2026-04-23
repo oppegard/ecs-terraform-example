@@ -10,7 +10,7 @@ The infra tree is intentionally small and split into two layers:
 - `modules/network`: minimal per-environment VPC with public subnets
 - `modules/github_oidc`: GitHub Actions OIDC trust and deploy role creation
 - `modules/ecs_environment`: composes `network`, the upstream ECS cluster
-  submodule at `v6.12.0`, and `github_oidc`
+  submodule at `v7.5.0`, and `github_oidc`
 
 `ecs_environment` is the shared layer for an environment. It owns:
 
@@ -30,9 +30,12 @@ It does not own app services or app-facing ingress.
 - app ALB, target group, and listener
 - app log group
 - ECS service and task definition via the upstream ECS service submodule at
-  `v6.12.0`
+  `v7.5.0`
 - app-scoped deploy permissions on the shared environment deploy role
 - baseline task-definition rendering for GitHub Actions
+
+The shared environment wrapper now also carries the upstream cluster module's
+`hashicorp/time` provider requirement.
 
 Future apps should follow this same pattern as sibling modules instead of
 being folded into `ecs_environment`.
