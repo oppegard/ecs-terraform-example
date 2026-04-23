@@ -61,6 +61,8 @@ resource "aws_iam_role" "github_actions" {
 }
 
 resource "aws_iam_role_policy" "github_actions" {
+  count = var.create_inline_policy ? 1 : 0
+
   name   = "${var.role_name}-inline"
   role   = aws_iam_role.github_actions.id
   policy = var.policy_json
