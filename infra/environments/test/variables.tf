@@ -63,6 +63,30 @@ variable "bootstrap_image" {
   default     = "public.ecr.aws/docker/library/python:3.12-slim"
 }
 
+variable "github_repository" {
+  description = "GitHub repository in owner/name format for OIDC trust."
+  type        = string
+  default     = "YOUR_ORG/YOUR_REPO"
+}
+
+variable "github_main_branch" {
+  description = "Git branch allowed to assume the deploy role."
+  type        = string
+  default     = "main"
+}
+
+variable "create_github_oidc_provider" {
+  description = "Whether this environment should create the shared GitHub OIDC provider."
+  type        = bool
+  default     = false
+}
+
+variable "github_oidc_provider_arn" {
+  description = "Existing GitHub OIDC provider ARN when not creating it in this environment."
+  type        = string
+  default     = ""
+}
+
 variable "extra_tags" {
   description = "Additional tags applied to environment resources."
   type        = map(string)

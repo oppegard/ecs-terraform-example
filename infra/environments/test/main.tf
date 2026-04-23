@@ -6,6 +6,54 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
+data "aws_iam_policy_document" "github_actions" {
+  statement {
+    sid       = "EcrAuth"
+    actions   = ["ecr:GetAuthorizationToken"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "EcrPushImage"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchGetImage",
+      "ecr:CompleteLayerUpload",
+      "ecr:InitiateLayerUpload",
+      "ecr:PutImage",
+      "ecr:UploadLayerPart",
+    ]
+    resources = [aws_ecr_repository.app.arn]
+  }
+
+  statement {
+    sid = "RegisterTaskDefinition"
+    actions = [
+      "ecs:DescribeTaskDefinition",
+      "ecs:RegisterTaskDefinition",
+    ]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "DeployService"
+    actions = [
+      "ecs:DescribeServices",
+      "ecs:UpdateService",
+    ]
+    resources = [module.ecs.services[local.service_name].id]
+  }
+
+  statement {
+    sid     = "PassTaskRoles"
+    actions = ["iam:PassRole"]
+    resources = [
+      module.ecs.services[local.service_name].task_exec_iam_role_arn,
+      module.ecs.services[local.service_name].tasks_iam_role_arn,
+    ]
+  }
+}
+
 locals {
   environment_name = var.environment
   name_prefix      = "${var.project_name}-${local.environment_name}"
@@ -219,4 +267,16 @@ module "ecs" {
   }
 
   tags = local.default_tags
+}
+
+module "github_actions_deploy" {
+  source = "../../modules/github_oidc"
+
+  role_name            = "${local.name_prefix}-github"
+  github_repository    = var.github_repository
+  allowed_subjects     = ["repo:${var.github_repository}:ref:refs/heads/${var.github_main_branch}"]
+  policy_json          = data.aws_iam_policy_document.github_actions.json
+  create_oidc_provider = var.create_github_oidc_provider
+  oidc_provider_arn    = var.github_oidc_provider_arn
+  tags                 = local.default_tags
 }

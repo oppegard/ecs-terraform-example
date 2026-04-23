@@ -27,7 +27,7 @@ variable "create_oidc_provider" {
 variable "oidc_provider_arn" {
   description = "Existing GitHub Actions OIDC provider ARN when not creating one here."
   type        = string
-  default     = null
+  default     = ""
 }
 
 variable "tags" {

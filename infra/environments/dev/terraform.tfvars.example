@@ -9,6 +9,13 @@ health_check_path   = "/health"
 bootstrap_image     = "public.ecr.aws/docker/library/python:3.12-slim"
 vpc_cidr            = "10.20.0.0/16"
 public_subnet_cidrs = ["10.20.1.0/24", "10.20.2.0/24"]
+github_repository   = "YOUR_ORG/YOUR_REPO"
+github_main_branch  = "main"
+
+# Set this to true in exactly one environment when bootstrapping the AWS
+# account. Reuse the resulting provider ARN everywhere else.
+create_github_oidc_provider = true
+github_oidc_provider_arn    = ""
 
 extra_tags = {
   Owner = "platform-example"

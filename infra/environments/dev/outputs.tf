@@ -60,3 +60,13 @@ output "ecr_repository_url" {
   description = "ECR repository URL."
   value       = aws_ecr_repository.app.repository_url
 }
+
+output "github_actions_role_arn" {
+  description = "GitHub Actions deploy role ARN for the dev environment."
+  value       = module.github_actions_deploy.role_arn
+}
+
+output "github_oidc_provider_arn" {
+  description = "GitHub Actions OIDC provider ARN used by this environment."
+  value       = module.github_actions_deploy.oidc_provider_arn
+}
