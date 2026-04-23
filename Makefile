@@ -22,7 +22,7 @@ docker-build:
 	docker build -t ecs-terraform-example-local ./app
 
 export-task-def-dev:
-	./scripts/export-task-def.sh dev
+	./scripts/export-task-def.sh dev hello-ecs
 
 export-task-def-test:
-	./scripts/export-task-def.sh test
+	./scripts/export-task-def.sh test hello-ecs
