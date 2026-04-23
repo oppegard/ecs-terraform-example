@@ -1,0 +1,15 @@
+aws_region          = "us-west-2"
+project_name        = "ecs-terraform-example"
+environment         = "dev"
+desired_count       = 1
+task_cpu            = 256
+task_memory         = 512
+container_port      = 8080
+health_check_path   = "/health"
+bootstrap_image     = "public.ecr.aws/docker/library/python:3.12-slim"
+vpc_cidr            = "10.20.0.0/16"
+public_subnet_cidrs = ["10.20.1.0/24", "10.20.2.0/24"]
+
+extra_tags = {
+  Owner = "platform-example"
+}
