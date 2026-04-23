@@ -27,9 +27,10 @@ module "network" {
 
 module "cluster" {
   source  = "terraform-aws-modules/ecs/aws//modules/cluster"
-  version = "6.12.0"
+  version = "7.5.0"
 
-  # v6 renamed `cluster_name` to `name` and accepts an explicit `region`.
+  # v7 keeps the v6-style wrapper surface and adds an internal `time`
+  # provider dependency in the upstream cluster module.
   region = var.aws_region
   name   = local.cluster_name
   tags   = local.common_tags
