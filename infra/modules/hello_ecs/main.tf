@@ -99,8 +99,10 @@ resource "aws_lb_listener" "http" {
 
 module "service" {
   source  = "terraform-aws-modules/ecs/aws//modules/service"
-  version = "5.12.1"
+  version = "6.12.0"
 
+  # v6 uses ECS API-style container keys and split SG ingress/egress rules.
+  region                         = var.aws_region
   cluster_arn                    = var.cluster_arn
   name                           = local.service_name
   family                         = local.service_name
@@ -110,7 +112,9 @@ module "service" {
   launch_type                    = "FARGATE"
   assign_public_ip               = true
   subnet_ids                     = var.subnet_ids
+  vpc_id                         = var.vpc_id
   ignore_task_definition_changes = true
+  track_latest                   = false
 
   create_task_exec_iam_role          = true
   task_exec_iam_role_name            = "${local.service_name}-exec"
@@ -125,7 +129,7 @@ module "service" {
       image     = var.bootstrap_image
       essential = true
 
-      port_mappings = [
+      portMappings = [
         {
           name          = local.container_name
           containerPort = var.container_port
@@ -148,7 +152,7 @@ module "service" {
         }
       ]
 
-      log_configuration = {
+      logConfiguration = {
         logDriver = "awslogs"
         options = {
           awslogs-group         = aws_cloudwatch_log_group.app.name
@@ -170,20 +174,20 @@ module "service" {
   security_group_name            = "${local.service_name}-service"
   security_group_use_name_prefix = false
   security_group_description     = "ECS service access for ${local.service_name}"
-  security_group_rules = {
+  security_group_ingress_rules = {
     alb_ingress = {
-      type                     = "ingress"
-      from_port                = var.container_port
-      to_port                  = var.container_port
-      protocol                 = "tcp"
-      source_security_group_id = aws_security_group.alb.id
+      description                  = "App traffic from the ALB"
+      from_port                    = tostring(var.container_port)
+      to_port                      = tostring(var.container_port)
+      ip_protocol                  = "tcp"
+      referenced_security_group_id = aws_security_group.alb.id
     }
+  }
+  security_group_egress_rules = {
     all_egress = {
-      type        = "egress"
-      from_port   = 0
-      to_port     = 0
-      protocol    = "-1"
-      cidr_blocks = ["0.0.0.0/0"]
+      description = "Outbound internet access"
+      cidr_ipv4   = "0.0.0.0/0"
+      ip_protocol = "-1"
     }
   }
 
@@ -220,23 +224,32 @@ data "aws_iam_policy_document" "github_actions" {
   }
 
   statement {
-    sid = "DeployService"
+    sid = "UpdateService"
     actions = [
       "ecs:DescribeServices",
       "ecs:UpdateService",
     ]
-    resources = [module.service.id]
+    resources = [
+      "arn:${data.aws_partition.current.partition}:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:service/${var.cluster_name}/${local.service_name}",
+    ]
   }
 
   statement {
-    sid     = "PassTaskRoles"
-    actions = ["iam:PassRole"]
+    sid = "PassRoles"
+    actions = [
+      "iam:GetRole",
+      "iam:PassRole",
+    ]
     resources = [
       module.service.task_exec_iam_role_arn,
       module.service.tasks_iam_role_arn,
     ]
   }
 }
+
+data "aws_partition" "current" {}
+
+data "aws_caller_identity" "current" {}
 
 resource "aws_iam_role_policy" "github_actions" {
   name   = "${local.service_name}-deploy"

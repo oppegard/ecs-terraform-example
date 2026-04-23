@@ -27,10 +27,12 @@ module "network" {
 
 module "cluster" {
   source  = "terraform-aws-modules/ecs/aws//modules/cluster"
-  version = "5.12.1"
+  version = "6.12.0"
 
-  cluster_name = local.cluster_name
-  tags         = local.common_tags
+  # v6 renamed `cluster_name` to `name` and accepts an explicit `region`.
+  region = var.aws_region
+  name   = local.cluster_name
+  tags   = local.common_tags
 }
 
 module "github_actions_deploy" {
