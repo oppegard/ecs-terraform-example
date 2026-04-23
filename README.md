@@ -43,7 +43,7 @@ running `terraform apply`.
 This module owns the per-environment shared layer:
 
 - `infra/modules/network`
-- `terraform-aws-modules/ecs/aws//modules/cluster` pinned to `v6.12.0`
+- `terraform-aws-modules/ecs/aws//modules/cluster` pinned to `v7.5.0`
 - `infra/modules/github_oidc`
 
 It outputs the shared values that app modules consume:
@@ -57,7 +57,7 @@ It outputs the shared values that app modules consume:
 
 This module owns the `hello-ecs` application that runs on the shared cluster:
 
-- `terraform-aws-modules/ecs/aws//modules/service` pinned to `v6.12.0`
+- `terraform-aws-modules/ecs/aws//modules/service` pinned to `v7.5.0`
 - the app ECR repository
 - the app ALB, target group, and listener
 - the app log group
@@ -118,6 +118,7 @@ The app-specific settings are grouped under `hello_ecs` in each
 
 The environment roots and wrapper modules pin the AWS provider to the `6.x`
 line so local `terraform validate` aligns with the ECS module version in use.
+The upstream v7 cluster module also pulls in `hashicorp/time`.
 
 ## Bootstrap AWS + GitHub OIDC
 
