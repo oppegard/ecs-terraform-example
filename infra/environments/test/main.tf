@@ -3,7 +3,7 @@ provider "aws" {
 }
 
 module "environment" {
-  source = "../../modules/ecs_environment_v6"
+  source = "../../modules/ecs_environment"
 
   aws_region                  = var.aws_region
   environment                 = var.environment
@@ -17,7 +17,7 @@ module "environment" {
 }
 
 module "hello_ecs" {
-  source = "../../modules/hello_ecs_v6"
+  source = "../../modules/hello_ecs"
 
   aws_region               = var.aws_region
   environment              = var.environment
