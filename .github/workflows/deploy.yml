@@ -14,6 +14,13 @@ on:
         options:
           - dev
           - test
+      app_name:
+        description: "Application to deploy"
+        required: true
+        default: hello-ecs
+        type: choice
+        options:
+          - hello-ecs
 
 permissions:
   contents: read
@@ -24,6 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       target_environment: ${{ steps.resolve.outputs.target_environment }}
+      app_name: ${{ steps.resolve.outputs.app_name }}
 
     steps:
       - name: Resolve target environment
@@ -31,8 +39,10 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             echo "target_environment=${{ inputs.target_environment }}" >> "$GITHUB_OUTPUT"
+            echo "app_name=${{ inputs.app_name }}" >> "$GITHUB_OUTPUT"
           else
             echo "target_environment=dev" >> "$GITHUB_OUTPUT"
+            echo "app_name=hello-ecs" >> "$GITHUB_OUTPUT"
           fi
 
   deploy:
@@ -41,8 +51,12 @@ jobs:
     environment: ${{ needs.resolve-target.outputs.target_environment }}
     env:
       TARGET_ENV: ${{ needs.resolve-target.outputs.target_environment }}
-      TASK_DEFINITION_PATH: infra/environments/${{ needs.resolve-target.outputs.target_environment }}/task-definition.json
+      APP_NAME: ${{ needs.resolve-target.outputs.app_name }}
+      TASK_DEFINITION_PATH: infra/environments/${{ needs.resolve-target.outputs.target_environment }}/task-definitions/${{ needs.resolve-target.outputs.app_name }}.json
       CONTAINER_NAME: app
+      ECS_CLUSTER: ${{ needs.resolve-target.outputs.target_environment }}-cluster
+      ECS_SERVICE: ${{ needs.resolve-target.outputs.target_environment }}-${{ needs.resolve-target.outputs.app_name }}
+      ECR_REPOSITORY: ${{ needs.resolve-target.outputs.target_environment }}/${{ needs.resolve-target.outputs.app_name }}
 
     steps:
       - name: Check out code
@@ -62,9 +76,8 @@ jobs:
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
           IMAGE_SHA_TAG: ${{ github.sha }}
-          IMAGE_ENV_TAG: ${{ env.TARGET_ENV }}-latest
+          IMAGE_ENV_TAG: ${{ env.TARGET_ENV }}-${{ env.APP_NAME }}-latest
         run: |
           docker build \
             -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_SHA_TAG" \
@@ -86,7 +99,7 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ vars.ECS_SERVICE }}
-          cluster: ${{ vars.ECS_CLUSTER }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
           wait-max-delay-seconds: 15
