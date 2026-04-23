@@ -43,7 +43,7 @@ running `terraform apply`.
 This module owns the per-environment shared layer:
 
 - `infra/modules/network`
-- `terraform-aws-modules/ecs/aws//modules/cluster` pinned to `v5.12.1`
+- `terraform-aws-modules/ecs/aws//modules/cluster` pinned to `v6.12.0`
 - `infra/modules/github_oidc`
 
 It outputs the shared values that app modules consume:
@@ -57,7 +57,7 @@ It outputs the shared values that app modules consume:
 
 This module owns the `hello-ecs` application that runs on the shared cluster:
 
-- `terraform-aws-modules/ecs/aws//modules/service` pinned to `v5.12.1`
+- `terraform-aws-modules/ecs/aws//modules/service` pinned to `v6.12.0`
 - the app ECR repository
 - the app ALB, target group, and listener
 - the app log group
@@ -116,8 +116,8 @@ The app-specific settings are grouped under `hello_ecs` in each
 - Docker for local image builds
 - a GitHub repository with Actions enabled
 
-The Terraform config pins the AWS provider to the `5.x` line so local
-`terraform validate` works cleanly with the required ECS module version.
+The environment roots and wrapper modules pin the AWS provider to the `6.x`
+line so local `terraform validate` aligns with the ECS module version in use.
 
 ## Bootstrap AWS + GitHub OIDC
 
@@ -221,7 +221,8 @@ This repo intentionally uses:
 - GitHub Actions to register later task definition revisions for releases
 
 To keep Terraform from constantly reverting image-only deploys, the app
-service configuration keeps `ignore_task_definition_changes = true`.
+service configuration keeps `ignore_task_definition_changes = true` and
+`track_latest = false`.
 
 Tradeoff:
 

@@ -101,6 +101,7 @@ module "service" {
   source  = "terraform-aws-modules/ecs/aws//modules/service"
   version = "6.12.0"
 
+  # v6 uses ECS API-style container keys and split SG ingress/egress rules.
   region                         = var.aws_region
   cluster_arn                    = var.cluster_arn
   name                           = local.service_name
