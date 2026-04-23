@@ -1,0 +1,92 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: "Environment to deploy"
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - test
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  resolve-target:
+    runs-on: ubuntu-latest
+    outputs:
+      target_environment: ${{ steps.resolve.outputs.target_environment }}
+
+    steps:
+      - name: Resolve target environment
+        id: resolve
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "target_environment=${{ inputs.target_environment }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "target_environment=dev" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    needs: resolve-target
+    runs-on: ubuntu-latest
+    environment: ${{ needs.resolve-target.outputs.target_environment }}
+    env:
+      TARGET_ENV: ${{ needs.resolve-target.outputs.target_environment }}
+      TASK_DEFINITION_PATH: infra/environments/${{ needs.resolve-target.outputs.target_environment }}/task-definition.json
+      CONTAINER_NAME: app
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push image
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+          IMAGE_SHA_TAG: ${{ github.sha }}
+          IMAGE_ENV_TAG: ${{ env.TARGET_ENV }}-latest
+        run: |
+          docker build \
+            -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_SHA_TAG" \
+            -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_ENV_TAG" \
+            ./app
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_SHA_TAG"
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_ENV_TAG"
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_SHA_TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Render Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ env.TASK_DEFINITION_PATH }}
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.build-image.outputs.image }}
+
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ vars.ECS_SERVICE }}
+          cluster: ${{ vars.ECS_CLUSTER }}
+          wait-for-service-stability: true
+          wait-max-delay-seconds: 15

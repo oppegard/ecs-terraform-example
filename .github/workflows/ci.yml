@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+
+jobs:
+  app:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile the sample app
+        run: python -m py_compile app/server.py
+
+      - name: Smoke test the sample app
+        run: |
+          python app/server.py &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          sleep 2
+          curl --fail http://127.0.0.1:8080/health
+
+      - name: Build the container image
+        run: docker build -t ecs-terraform-example-ci ./app
+
+  terraform:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment:
+          - dev
+          - test
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Check formatting
+        run: terraform fmt -check -recursive
+
+      - name: Initialize Terraform
+        run: terraform -chdir=infra/environments/${{ matrix.environment }} init -backend=false
+
+      - name: Validate Terraform
+        run: terraform -chdir=infra/environments/${{ matrix.environment }} validate
